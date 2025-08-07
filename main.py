@@ -7,12 +7,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 
-# Load API key from .env
 load_dotenv()
 openai.api_key = os.getenv("OPENROUTER_API_KEY")
 openai.api_base = "https://openrouter.ai/api/v1"
 
 app = FastAPI()
+
+chat_history = [
+    {"role": "system", "content": "You are a helpful assistant."}
+]
 
 class ChatRequest(BaseModel):
     message: str
@@ -30,15 +33,20 @@ async def root():
 @app.post("/chat")
 async def chat(req: ChatRequest):
     try:
+        chat_history.append({"role": "user", "content": req.message})
+
         response = openai.ChatCompletion.create(
             model="mistralai/mistral-7b-instruct",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": req.message}
-            ]
+            messages=chat_history,
+            max_tokens=100
         )
-        reply = response['choices'][0]['message']['content']
-        return {"response": reply.strip()}
+
+        reply = response['choices'][0]['message']['content'].strip()
+
+        chat_history.append({"role": "assistant", "content": reply})
+
+        return {"response": reply}
     except Exception as e:
         print("❌ OpenRouter error:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
