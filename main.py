@@ -14,8 +14,10 @@ openai.api_base = "https://openrouter.ai/api/v1"
 app = FastAPI()
 
 chat_history = [
-    {"role": "system", "content": "You are a helpful assistant."}
+    {"role": "system",
+     "content": "You are a helpful assistant."}
 ]
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -29,11 +31,10 @@ async def root():
     return FileResponse("static/index.html")
 
 
-
 @app.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(request: ChatRequest):
     try:
-        chat_history.append({"role": "user", "content": req.message})
+        chat_history.append({"role": "user", "content": request.message})
 
         response = openai.ChatCompletion.create(
             model="mistralai/mistral-7b-instruct",
@@ -49,4 +50,3 @@ async def chat(req: ChatRequest):
     except Exception as e:
         print("❌ OpenRouter error:", e)
         raise HTTPException(status_code=500, detail=str(e))
-
